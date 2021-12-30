@@ -1,0 +1,10 @@
+synpkt=IP(src="c3.net3.local", dst="s3.net3.local") / TCP (seq=100, sport=4000, dport=2000) ; ackpkt=synpkt.copy() ; ackpkt[TCP].seq=ackpkt[TCP].seq + 1 ; ackpkt[TCP].flags="A" ; synackpkt=sr1(synpkt) ; ackpkt[TCP].ack=synackpkt[TCP].seq + 1 ; send(ackpkt)
+
+
+datapkt=ackpkt.copy() ; datapkt[TCP].flags="PA" ; datapkt = datapkt / Raw(load='Hello, world') ; send(datapkt)
+
+finpkt = datapkt.copy() ; finpkt[TCP].flags="FA" ; finpkt[TCP].seq=finpkt[TCP].seq + len(datapkt[TCP].payload) ; finpkt[TCP].remove_payload() ; resfin=sr1(finpkt)
+
+finfinpkt=finpkt.copy() ; finfinpkt[TCP].flags="A" ; finfinpkt[TCP].seq = finfinpkt[TCP].seq +1 ; finfinpkt[TCP].ack = finfinpkt[TCP].ack +1 ; send(finfinpkt)
+
+
