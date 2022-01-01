@@ -1,16 +1,24 @@
 #!/usr/bin/expect
 
-# spawn "/usr/bin/scapy";
-spawn "/opt/anaconda3/bin/scapy"
+# An ugly program with lots of hardcoded dependencies for this specific
+# connection, just to show how to use expect with scapy.
+
+
+spawn "/usr/bin/scapy";
+
+
 expect ">>> " 
-send "synpkt=IP()/TCP()\r" 
-send "synpkt.show()\r" 
 
 # PAY ATTENTION TO escape the following chars: " [ and ]
 
+# We generate a random source port number to be able to run the script
+# several times
+
+send "sp=[expr {int(rand() *10000)}]\r"
+
 # We build the first SYN packet and send it
 
-send "synpkt=IP(dst=\"www.cnn.com\") / TCP (sport=4000, dport=80)\r"
+send "synpkt=IP(dst=\"www.cnn.com\") / TCP (sport=sp, dport=80)\r"
 send "synackpkt=sr1(synpkt, timeout=1) \r"
 
 # The ACK packet is based on the SYN, with different flags and seq. number
@@ -33,27 +41,24 @@ send "send(ackpkt)\r"
 
 send "datapkt=ackpkt.copy() \r"
 send "datapkt\[TCP\].flags=\"PA\"\r"
-send "datapkt = datapkt / Raw(load=\'GET / HTTP/1.0 \\n\\n \') \r"
-send "res, unansw=sr(datapkt)\r"
+send "datapkt = datapkt / Raw(load=\'GET / HTTP/1.0\\n\\n\') \r"
+# the server replies with an ACK before sending the DATA
+# we specify "multi" in sr() to indicate that we wait for several packets
+send "res, unansw=sr(datapkt,multi = 1,timeout=1)\r"
+send "print(\"Answer from the web site: \")\r"
+send "res\[1\]\[1\]\[Raw\].load\r"
 
-# We cleanly close the connection with a FIN packet, based on the DATA one
-# with distinct flags and a seq number based on the length of the send payload
-# we also need to remove the payload from the data packet
+# In this specific case, the server will close the connection with a FINACK
+# We have to ack it and that will be the end of it 
 
-#send "finpkt = datapkt.copy() \r"
-#send "finpkt\[TCP\].flags=\"FA\"\r"
-#send "finpkt\[TCP\].seq=finpkt\[TCP\].seq + len(datapkt\[TCP\].payload) \r"
-#send "finpkt\[TCP\].remove_payload()\r"
-#send "resfin=sr1(finpkt, timeout=1)\r "
+send "finpkt = datapkt.copy() \r"
+send "finpkt\[TCP\].flags=\"FA\"\r"
+send "finpkt\[TCP\].seq=finpkt\[TCP\].seq + len(datapkt\[TCP\].payload) \r"
+send "finpkt\[TCP\].ack=res\[1\]\[1\]\[TCP\].seq + len(res\[1\]\[1\]\[TCP\].payload) + 1\r"
+send "finkpkt\[TCP\].ack\r"
+send "finpkt\[TCP\].remove_payload()\r"
+send "send(finpkt)\r "
 
-# That FIN packet must receive a FIN ACK that we must ACK
-# FIN flag, just like SYN ones, count for one byte in the seq number
-
-#send "finfinpkt=finpkt.copy()\r"
-#send "finfinpkt\[TCP\].flags=\"A\"\r"
-#send "finfinpkt\[TCP\].seq = finfinpkt\[TCP\].seq +1\r"
-#send "finfinpkt\[TCP\].ack = finfinpkt\[TCP\].ack +1 \r"
-#send "send(finfinpkt)\r"
 
 interact
 
