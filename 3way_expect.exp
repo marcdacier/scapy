@@ -1,0 +1,60 @@
+#!/usr/bin/expect
+
+# spawn "/usr/bin/scapy";
+spawn "/opt/anaconda3/bin/scapy"
+expect ">>> " 
+send "synpkt=IP()/TCP()\r" 
+send "synpkt.show()\r" 
+
+# PAY ATTENTION TO escape the following chars: " [ and ]
+
+# We build the first SYN packet and send it
+
+send "synpkt=IP(dst=\"www.cnn.com\") / TCP (sport=4000, dport=80)\r"
+send "synackpkt=sr1(synpkt, timeout=1) \r"
+
+# The ACK packet is based on the SYN, with different flags and seq. number
+
+send "ackpkt=synpkt.copy()\r"
+send "ackpkt\[TCP\].seq=ackpkt\[TCP\].seq + 1 \r"
+send "ackpkt\[TCP\].flags=\"A\" \r"
+
+# The ack value in the ACK is obtained from the received SYNACK
+
+send "ackpkt\[TCP\].ack=synackpkt\[TCP\].seq + 1 \r"
+
+# We send the ack
+
+send "send(ackpkt)\r"
+
+# Let us send some payload.
+# The DATA packet is based on the ack with different flags and with a payload
+
+
+send "datapkt=ackpkt.copy() \r"
+send "datapkt\[TCP\].flags=\"PA\"\r"
+send "datapkt = datapkt / Raw(load=\'GET / HTTP/1.0 \\n\\n \') \r"
+send "res, unansw=sr(datapkt)\r"
+
+# We cleanly close the connection with a FIN packet, based on the DATA one
+# with distinct flags and a seq number based on the length of the send payload
+# we also need to remove the payload from the data packet
+
+#send "finpkt = datapkt.copy() \r"
+#send "finpkt\[TCP\].flags=\"FA\"\r"
+#send "finpkt\[TCP\].seq=finpkt\[TCP\].seq + len(datapkt\[TCP\].payload) \r"
+#send "finpkt\[TCP\].remove_payload()\r"
+#send "resfin=sr1(finpkt, timeout=1)\r "
+
+# That FIN packet must receive a FIN ACK that we must ACK
+# FIN flag, just like SYN ones, count for one byte in the seq number
+
+#send "finfinpkt=finpkt.copy()\r"
+#send "finfinpkt\[TCP\].flags=\"A\"\r"
+#send "finfinpkt\[TCP\].seq = finfinpkt\[TCP\].seq +1\r"
+#send "finfinpkt\[TCP\].ack = finfinpkt\[TCP\].ack +1 \r"
+#send "send(finfinpkt)\r"
+
+interact
+
+
