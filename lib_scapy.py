@@ -119,8 +119,7 @@ elif not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.sm.lower():
 
 
 def get_args(line_args, mylog):
- 
-    """
+     """
     This module reads the args from the command line and produces some check
     line_args are all the arguments whereas mylog is a handler for logging
     it returns all the arguments with their default values if they have 
@@ -140,20 +139,18 @@ INFO:mainlogger:all arguments have been parsed
     # Initializing return codes for the function
     status_code=0
     status=""
-
     # Parsing all provided arguments
     parser = argparse.ArgumentParser(description="TCP handshake with scapy")
-
     parser.add_argument('-si' , help='the source ip to connect from', default="c3.net3.local")
     parser.add_argument('-sp',  type=int , help='the source port to connect from')
     parser.add_argument('-di' , help='the destination ip to connect to', default="s3.net3.local")
     parser.add_argument('-dp',  type=int , help='the destination port to connect to', default=2000)
     parser.add_argument('-sq',  type=int , help='initial sequence number of the client', default=1000)
     parser.add_argument('-db',  type=int , help='debug level (0,10,20,30,40,50)', default=30)
-
     # args[0] is the script name, first argument starts at args[1]
     args=parser.parse_args(line_args[1:])
 
+    # Checking the arguments provided
     # If no source port provided, choose a random one, below 65535
     if args.sp==None:
         args.sp=random.randrange(1,65535)
@@ -184,12 +181,12 @@ INFO:mainlogger:all arguments have been parsed
         mylog.error("Source address, %s, is neither an IP nor a resolvable name", args.si)
         status_code=-1
         status="Fatal Error: erroneous source IP:  \'" + str(args.si) + "\'"
-        
     # Check if di is an IP or a name
     elif not is_ip(args.di, mylog) and not resolvable(args.di, mylog):
         mylog.error("Destination address, %s,  is neither an IP nor a resolvable name", args.di)
         status_code=-1
         status="Fatal Error: erroneous destination IP:  \'" + str(args.di) + "\'"
+
     # Check validity of debug level
     elif args.db < 0 or args.db>50:  
         mylog.error("Debug level should be a value between 0 and 50: \n 0 = NOTSET \n 10 = DEBUG  \n 20 = INFO  \n 30 = WARNING \n 40 = ERROR \n 50 = CRITICAL" )
@@ -236,18 +233,14 @@ False
 False
 >>> resolvable('google.com',templog)
 True
-
     """
 
     try:
-
         # an IP could be defined with less than 4 groups of digits
         # for instance: gethostbyname("1.1") returns "1.0.0.1"
         # but ipaddress.ip_address("1.1") returns false!
         # we must verify that "name" does not only contain digits
-        
         only_digits=not re.search('[a-z|A-Z]+',name)
-
         # if it does only contain digit, we do not call gethostbyname
         
         if not only_digits:
@@ -255,13 +248,11 @@ True
             ip = socket.gethostbyname(name)
         else:
             mylog.debug("\'%s\' does not contain alphabetical characters", name)
-            ip = False
-            
+            ip = False            
         if ip:
             return True
         else:
             return False
-        
     except Exception:
         return False
 
@@ -283,7 +274,7 @@ def is_ip(address, mylog):
 False
 >>> is_ip('1.2.3.4',templog)
 True
->>> is_ip('0.0.0.0y',templog)
+>>> is_ip('0.0.0.0',templog)
 True
 >>> is_ip('1.2.3.4.5',templog)
 False
@@ -295,17 +286,15 @@ False
 False
 >>> is_ip('google.com',templog)
 False
-
-
     """
 
     try:
         valid_ip=ipaddress.ip_address(address)
         if valid_ip:
-            mylog.debug("\'%s\' appears to be a valid numerical IP addressaccording to the ipaddress module",address)
+            mylog.debug("\'%s\' seems valid according to the ipaddress module",address)
             return True
     except Exception:
-        mylog.debug("\'%s\' does not appear to be a valid numerical IP address according to the ipaddress module", address)
+        mylog.debug("\'%s\' is not an IP address according to the ipaddress module", address)
         return False
 
 # -----
@@ -318,3 +307,4 @@ if __name__ == "__main__":
     print("This line is only written when this file is invoked as main")
     import doctest
     doctest.testmod()
+ 
