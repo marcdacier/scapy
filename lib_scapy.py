@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 # invoke this file with -v in order to run all doctests
 # namely:  python3 lib_scapy.py -v
 #
@@ -8,13 +9,14 @@ import sys
 import argparse # docs.python.org/3/library/argparse.html
 import logging 
 
+
 # --------------------------
 # HIJACK_GET_ARGS(line_args, mylog)
 # --------------------------
 
 
+
 def hijack_get_args(line_args, mylog):
- 
     """
     This module reads the args from the command line and produces some check
     line_args are all the arguments whereas mylog is a handler for logging
@@ -77,14 +79,15 @@ INFO:mainlogger:all arguments have been parsed
         status="Fatal Error: erroneous destination IP:  \'" + str(args.di) + "\'"
 
     # Check validity of source MAC address
-elif not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.sm.lower():
+
+    elif not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.sm.lower()):
                   mylog.critical("Provided source MAC addres, \'%s\', is not valid.\nAborting", args.sm)
                   status_code=-1
                   status="Fatal Error: wrong source MAC address: \'" + str(args.sm) + "\'"
 
     # Checking validity of destination MAC address, if provided
     elif args.dm != "unknown":
-                      if not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.dm.lower():
+                      if not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.dm.lower()):
                                       mylog.critical("Provided destination MAC addres, \'%s\', is not valid.\nAborting", args.dm)
                                       status_code=-1
                                       status="Fatal Error: wrong destination MAC address: \'" + str(args.dm) + "\'"
@@ -117,9 +120,8 @@ elif not re.match("([0-9a-f]{2}:){5}[0-9a-f]{2}",args.sm.lower():
 # GET_ARGS(line_args, mylog)
 # --------------------------
 
-
 def get_args(line_args, mylog):
-     """
+    """
     This module reads the args from the command line and produces some check
     line_args are all the arguments whereas mylog is a handler for logging
     it returns all the arguments with their default values if they have 

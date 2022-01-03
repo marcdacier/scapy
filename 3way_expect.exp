@@ -2,7 +2,8 @@
 
 # An ugly program with lots of hardcoded dependencies for this specific
 # connection, just to show how to use expect with scapy.
-
+# Purpose: connect to port 80 of www.cnn.com and send a GET request.
+# Close the connection, as per the server's request, afterwards. 
 
 spawn "/usr/bin/scapy";
 
@@ -58,6 +59,11 @@ send "finpkt\[TCP\].ack=res\[1\]\[1\]\[TCP\].seq + len(res\[1\]\[1\]\[TCP\].payl
 send "finkpkt\[TCP\].ack\r"
 send "finpkt\[TCP\].remove_payload()\r"
 send "send(finpkt)\r "
+
+send "print(\"Here are the results received to my GET request\")\r"
+send "res.summary()\r"
+send "print(\"More specifically, here is the payload sent by the server\")\r"
+send "res\[1\]\[1\]\[Raw\]\r"
 
 
 interact
